@@ -1,0 +1,4 @@
+/.vagrant
+/f8forum/target
+*.jar
+*.retry
