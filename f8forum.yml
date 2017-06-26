@@ -1,0 +1,17 @@
+---
+
+- hosts: all
+  tasks:
+  
+    - name: Register IP addresses of web and database hosts
+      set_fact:
+        web_ip: "{{ hostvars['web']['ansible_host'] }}"
+        database_ip: "{{ hostvars['database']['ansible_host'] }}"
+        
+    - debug:
+        msg: "IP web: {{ web_ip }}. IP db: {{ database_ip }}"
+        
+  handlers:
+
+
+...
