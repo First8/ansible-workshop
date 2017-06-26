@@ -11,7 +11,41 @@
     - debug:
         msg: "IP web: {{ web_ip }}. IP db: {{ database_ip }}"
         
+    - name: Disallow password authentication
+      lineinfile: 
+        dest: /etc/ssh/sshd_config
+        regexp: "^PasswordAuthentication"
+        line: "PasswordAuthentication no"
+        state: present
+      notify: Restart SSH
+      become: true
+
+    - name: Verify UFW is present on the system
+      apt:
+        name: ufw
+        state: present
+      become: true
+      register: ufw_installation  
+
+    - name: Allow access on the SSH port
+      ufw:
+        port: ssh
+        policy: allow
+        rule: limit
+        proto: tcp
+      become: true
+
+    - name: Deny access on all ports
+      ufw:
+        state: enabled
+        policy: deny
+      become: true
+      when: ufw_installation.changed
+            
   handlers:
-
-
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+      become: true
 ...
