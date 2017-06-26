@@ -130,4 +130,58 @@
         name: postgresql
         state: restarted
       become: true
+      
+- hosts: web
+  tasks:
+    - name: Add Jessie backports repo
+      apt_repository:
+        repo: "deb http://ftp.de.debian.org/debian jessie-backports main"
+        state: present
+        update_cache: yes
+      become: true
+
+    - name: Install OpenJDK JRE 8
+      apt:
+        name: openjdk-8-jre
+        default_release: jessie-backports
+        update_cache: yes
+        cache_valid_time: 3600
+      become: true
+
+    - name: Create the F8Forum data directory
+      file:
+        path: /opt/f8forum
+        state: directory
+      become: true
+
+    - name: Copy start script into the data directory
+      copy:
+        src: web/start.sh
+        dest: /opt/f8forum
+        mode: 0755
+      become: true
+
+    - name: Copy F8Forum Jar into the data directory
+      copy:
+        src: web/f8forum.jar
+        dest: /opt/f8forum
+        mode: 0755
+      become: true
+      
+    - name: Open port 8080 in UFW
+      ufw:
+        port: 8080
+        policy: allow
+      become: true
+
+    - name: Add IP address of host 'database' to /etc/hosts
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ database_ip }} database"
+        regexp: "^{{ database_ip }} database"
+      become: true
+      
+    - name: Start F8Forum application
+      command: /opt/f8forum/start.sh &
+      become: true
 ...
