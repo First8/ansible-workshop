@@ -1,0 +1,66 @@
+---
+
+- hosts: localhost
+  tasks:
+    - name: Install DOPy, the Python wrapper for the DigitalOcean API
+      pip:
+        name: dopy==0.3.5
+        state: present
+      become: true
+      
+    - name: Generate SSH user keys for the Vagrant user
+      user:
+        name: vagrant
+        generate_ssh_key: yes
+      become: true
+      
+      
+    - name: Ensure the SSH pubkey of the Vagrant user is available on DO
+      digital_ocean:
+        name: first8_ssh_key
+        command: ssh
+        ssh_pub_key: "{{ lookup('file', '/home/vagrant/.ssh/id_rsa.pub') }}"
+        state: present
+      register: uploaded_ssh_key
+
+    - name: Verify that a droplet for 'web' exists.
+      digital_ocean:
+        command: droplet
+        name: first8-web-droplet
+        unique_name: true
+        state: present
+        size_id: 1gb
+        region_id: ams2
+        image_id: debian-8-x64
+        ssh_key_ids: "{{ uploaded_ssh_key.ssh_key.id }}"
+        wait_timeout: 500
+      register: web_droplet
+      
+    - name: Add 'web' to the in-memory inventory
+      add_host:
+        name: web
+        ansible_host: "{{ web_droplet.droplet.ip_address }}"
+        ansible_user: root
+        
+    - name: Verify that a droplet for 'database' exists.
+      digital_ocean:
+        command: droplet
+        name: first8-database-droplet
+        unique_name: true
+        state: present
+        size_id: 512mb
+        region_id: ams2
+        image_id: debian-8-x64
+        ssh_key_ids: "{{ uploaded_ssh_key.ssh_key.id }}"
+        wait_timeout: 500
+      register: database_droplet
+      
+    - name: Add 'database' to the in-memory inventory
+      add_host:
+        name: database
+        ansible_host: "{{ database_droplet.droplet.ip_address }}"
+        ansible_user: root
+        
+- include: f8forum.yml
+        
+...
